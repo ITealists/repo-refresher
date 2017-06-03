@@ -12,6 +12,7 @@ echo "  - Repository: $REPO, Branch $BRANCH, Stage $STAGE"
 #If $REPO isn't supplied just exit.
 if [ -z "$REPO" ];
 then
+    echo "* * * * * git-setup" >> /var/spool/cron/crontabs/root
     echo $(date +%F_%T)\tgit-setup\t"NO \$REPO" > /logs/git-setup
     exit
 fi
@@ -37,7 +38,16 @@ else #construct
     fi
   done
   #now create repo string and auths string
-  GIT_REPO=http://$GIT_USER:$GIT_KEY@$GIT_BASE/$REPO.git
+  GIT_REPO=http://
+  if [ ! -z "$GIT_USER" ]; then
+    if [ ! -z "$GIT_KEY" ]; then
+      GIT_REPO=http://$GIT_USER:$GIT_KEY@$GIT_BASE/$REPO.git
+    else
+      GIT_REPO=http://$GIT_USER@$GIT_BASE/$REPO.git
+    fi
+  else
+    GIT_REPO=http://$GIT_BASE/$REPO.git
+  fi
 fi
 
 #now clone the repository
