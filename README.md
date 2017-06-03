@@ -1,8 +1,8 @@
 # repo-refresher
 Simple utility to setup a git repository in a docker and update it periodically
 
-##Status
-3 Jun 17 - This is under development! Currently only works with username and token provided.
+## Status
+- 3 Jun 17 - This is under development! Currently only tested with user+token
 
 ## About
 I wanted a `docker image` that only did one thing - setup up a `git` repository in your docker and take care of refreshing it on a schedule.
