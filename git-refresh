@@ -1,0 +1,18 @@
+#!/bin/bash
+######
+# Created by ryan01 on 07/05/2017.
+# Refresh just polls the connected github directory for changes and pull them in
+# set up by docker build, which relies on environment variables GIT_REPO, GIT_BRANCH, and GIT_FULL (fully declared repo)
+# expects git credentials to be stored in the mounted directory file /git or as GIT_USER, GIT_KEY
+######
+
+cd /$REPO
+LAST_COMMIT=$(git log -n 1 | grep commit | awk '{ print $2 }')
+git pull
+THIS_COMMIT=$(git log -n 1 | grep commit | awk '{ print $2 }')
+
+if [ LAST_COMMIT != THIS_COMMIT ]
+then
+    if [ ! -f /logs/refresh-history ]; then echo TIMESTAMP\tFROM\tTO > /logs/$REPO-$BRANCH-history; fi;
+    echo $(date +%F_%T)\t$LAST_COMMIT\t$THIS_COMMIT >> /logs/$REPO-$BRANCH-history
+fi
