@@ -10,7 +10,7 @@ RUN apk add --update \
 ENV BRANCH 'master'
 VOLUME ["/git","/logs"]
 #create the pull script so it can be called when container starts
-ADD git-* .
+ADD git-* /
 RUN chmod +x git-*
 RUN /bin/bash -c './git-setup'      #this schedules a cron to pick up once repo is specified
 ENTRYPOINT ["crond","-l2", "-f"]
