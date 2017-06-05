@@ -3,24 +3,38 @@
 #if GIT variables aren't defined during dockerization, it uses credentials mounted from the server in the /git directory
 #GIT_FULL is used to override the default settings which look for a repository from whatever's in git/git_base
 
-echo "Setting up repository link for \$REPO, \$BRANCH, and \$STAGE"
-echo "  - Will use mounted credentials from /git for any of GIT_KEY, GIT_USER, GIT_BASE not set as environment variables."
-echo "  - Will use 'master' if \$BRANCH is not set"
-echo "  - Will use \$BRANCH value if \$STAGE is not set."
-echo "  - Repository: $REPO, Branch $BRANCH, Stage $STAGE"
+#Setup /logs directory and setup log file
+if [ ! -d /logs ]; then
+    mkdir /logs
+fi
+touch /logs/git-setup
 
 #If $REPO isn't supplied just exit.
-if [ -z "$REPO" ];
-then
-    echo "* * * * * git-setup" >> /var/spool/cron/crontabs/root
-    echo $(date +%F_%T)\tgit-setup\t"NO \$REPO" > /logs/git-setup
+if [ -z "$REPO" ]; then
+    touch /var/spool/cron/crontabs/root
+    IS_SCHED=$(cat /var/spool/cron/crontabs/root | grep git-setup )
+    if [ "$IS_SCHED" == '' ]; then
+        #first-run
+        echo "* * * * * /bin/bash -c 'pwd && cd / && ./git-setup'" >> /var/spool/cron/crontabs/root
+        echo -e "$(date +%F_%T)\tgit-setup scheduled\tNO \$REPO" >> /logs/git-setup
+    else
+        #repeat runs
+        echo -e "$(date +%F_%T)\tgit-setup postponed\tstill no\$REPO" >> /logs/git-setup
+    fi
     exit
 fi
 
+echo -e "$(date +%F_%T)\tgit-setup running\t\$REPO is $REPO" >> /logs/git-setup
+echo echo -e "$(date +%F_%T)\t...running\tSetting up repository link for \$REPO, \$BRANCH, and \$STAGE" >> /logs/git-setup
+echo -e "$(date +%F_%T)\t...info\t- Will use mounted credentials from /git for any of GIT_KEY, GIT_USER, GIT_BASE not set as environment variables." >> /logs/git-setup
+echo -e "$(date +%F_%T)\t...info\t- Will use 'master' if \$BRANCH is not set" >> /logs/git-setup
+echo -e "$(date +%F_%T)\t...info\t- Will use \$BRANCH value if \$STAGE is not set." >> /logs/git-setup
+echo -e "$(date +%F_%T)\t...info\t- Repository: $REPO, Branch $BRANCH, Stage $STAGE" >> /logs/git-setup
+
 if [ ! -z "$GIT_FULL" ]
 then
-  echo "\$GIT_FULL was set ($GIT_FULL). Expecting fully specified repository for \$REPO, including any necessary credentials."
-  echo "  - REPO: '$REPO'"
+  echo -e "$(date +%F_%T)\t...setup\t\$GIT_FULL was set ($GIT_FULL). Expecting fully specified repository for \$REPO, including any necessary credentials." >> /logs/git-setup
+  echo -e "$(date +%F_%T)\t...setup\tREPO: '$REPO'\tGIT_FULL '$GIT_FULL'" >> /logs/git-setup
   GIT_REPO=$REPO
 else #construct
   #check for docker ENV presets, or fill from mounted git/ directory
@@ -31,10 +45,10 @@ else #construct
     if [ -z "$GIT_VAL" ]
     then
       GIT_FILE="git/"$( echo $GIT_VAR | tr [A-Z] [a-z] )
-      echo "Using $GIT_FILE for $GIT_VAR"
+      echo -e "$(date +%F_%T)\t...running\tUsing $GIT_FILE for $GIT_VAR" >> /logs/git-setup
       export $GIT_VAR=$(<$GIT_FILE)
     else
-      echo "$GIT_VAR was set via docker ENV"
+      echo -e "\t...setup\t$GIT_VAR was set via environment var" >> /logs/git-setup
     fi
   done
   #now create repo string and auths string
@@ -51,13 +65,12 @@ else #construct
 fi
 
 #now clone the repository
-echo "Cloning $GIT_REPO"
+echo -e "\t...setup\tCloning $GIT_REPO" >> /logs/git-setup
 
 git clone $GIT_REPO $REPO
 
-if [ ! -d $REPO ]
-then
-  echo "ERROR! could not clone repository. setup failed"
+if [ ! -d $REPO ]; then
+  echo -e "\t...failure\tERROR! could not clone repository" >> /logs/git-setup
 else
   #next check out the branch
   cd $REPO
@@ -72,5 +85,10 @@ else
   touch /logs/$REPO-$BRANCH-refresh
   if [ -z "$REFRESH" ]; then  export REFRESH="*/10 * * * *" ; fi
   touch /logs/git-refresh
-  echo "$REFRESH git-refresh >> /logs/git-refresh" > /var/spool/cron/crontabs/root
+
+  #replace git-setup with git-refresh
+  touch new_cron && cat /var/spool/cron/crontabs/root | grep -v git-setup >> new_cron && mv new_cron /var/spool/cron/crontabs/root
+  echo "$REFRESH /bin/bash -c 'cd / && ./git-refresh' >> /logs/git-refresh" >> /var/spool/cron/crontabs/root
+
+  echo "\t...finished\tRefresh schedule '$REFRESH'" >> /logs/git-setup
 fi

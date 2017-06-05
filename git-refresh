@@ -13,6 +13,6 @@ THIS_COMMIT=$(git log -n 1 | grep commit | awk '{ print $2 }')
 
 if [ LAST_COMMIT != THIS_COMMIT ]
 then
-    if [ ! -f /logs/refresh-history ]; then echo TIMESTAMP\tFROM\tTO > /logs/$REPO-$BRANCH-history; fi;
-    echo $(date +%F_%T)\t$LAST_COMMIT\t$THIS_COMMIT >> /logs/$REPO-$BRANCH-history
+    if [ ! -f /logs/refresh-history ]; then echo -e TIMESTAMP\tFROM\tTO > /logs/$REPO-$BRANCH-history; fi;
+    echo -e "$(date +%F_%T)\t$LAST_COMMIT\t$THIS_COMMIT" >> /logs/$REPO-$BRANCH-history
 fi
