@@ -33,7 +33,7 @@ echo -e "$(date +%F_%T)\t...info\t- Repository: $REPO, Branch $BRANCH, Stage $ST
 
 if [ ! -z "$GIT_FULL" ]
 then
-  echo -e "$(date +%F_%T)\t...setup\t\$GIT_FULL was set ($GIT_FULL). Expecting fully specified repository for \$REPO, including any necessary credentials." >> /logs/git-setup
+  echo -e "$(date +%F_%T)\t...setup\t\$GIT_FULL was set ($GIT_FULL). Expecting fully specified repository for \$REPO." >> /logs/git-setup
   echo -e "$(date +%F_%T)\t...setup\tREPO: '$REPO'\tGIT_FULL '$GIT_FULL'" >> /logs/git-setup
   GIT_REPO=$REPO
 else #construct
@@ -51,18 +51,23 @@ else #construct
       echo -e "\t...setup\t$GIT_VAR was set via environment var" >> /logs/git-setup
     fi
   done
+
+  #now store the credentials to .git-credentials
+  if [ ! -z "$GIT_USER" ]; then
+    touch ~/.git-credentials
+    if [ ! -z "$GIT_KEY" ]; then
+        echo https://$GIT_USER:$GIT_KEY@github.com >> ~/.git-credentials
+        git config credential.helper store
+    else
+        echo -e "\t...setup cannot store credentials with only USER NAME" >> /logs/git-setup
+    fi
+  fi
+
+
+
   #now create repo string and auths string
   GIT_REPO=http://
-  if [ ! -z "$GIT_USER" ]; then
-    if [ ! -z "$GIT_KEY" ]; then
-      GIT_REPO=http://$GIT_USER:$GIT_KEY@$GIT_BASE/$REPO.git
-    else
-      GIT_REPO=http://$GIT_USER@$GIT_BASE/$REPO.git
-    fi
-  else
-    GIT_REPO=http://$GIT_BASE/$REPO.git
-  fi
-fi
+  GIT_REPO=http://$GIT_BASE/$REPO.git
 
 #now clone the repository
 echo -e "\t...setup\tCloning $GIT_REPO" >> /logs/git-setup

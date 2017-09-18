@@ -8,6 +8,7 @@
 
 cd /$REPO
 LAST_COMMIT=$(git log -n 1 | grep commit | awk '{ print $2 }')
+git config credential.helper store
 git pull
 THIS_COMMIT=$(git log -n 1 | grep commit | awk '{ print $2 }')
 
