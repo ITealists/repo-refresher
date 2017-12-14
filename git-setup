@@ -69,31 +69,32 @@ else #construct
   GIT_REPO=http://
   GIT_REPO=http://$GIT_BASE/$REPO.git
 
-#now clone the repository
-echo -e "\t...setup\tCloning $GIT_REPO" >> /logs/git-setup
+    #now clone the repository
+    echo -e "\t...setup\tCloning $GIT_REPO" >> /logs/git-setup
 
-git clone $GIT_REPO $REPO
+    git clone $GIT_REPO $REPO
 
-if [ ! -d $REPO ]; then
-  echo -e "\t...failure\tERROR! could not clone repository" >> /logs/git-setup
-else
-  #next check out the branch
-  cd $REPO
-  if [ -z "$BRANCH" ]; then export BRANCH=master; fi
-  git checkout $BRANCH
+    if [ ! -d $REPO ]; then
+      echo -e "\t...failure\tERROR! could not clone repository" >> /logs/git-setup
+    else
+      #next check out the branch
+      cd $REPO
+      if [ -z "$BRANCH" ]; then export BRANCH=master; fi
+      git checkout $BRANCH
 
-  #next, if $STAGE is not set, set it to $BRANCH
-  if [ -z "$STAGE" ]; then export STAGE=$BRANCH; fi
+      #next, if $STAGE is not set, set it to $BRANCH
+      if [ -z "$STAGE" ]; then export STAGE=$BRANCH; fi
 
-  #finally, schedule a cronjob to refresh the branch (default every 10m)
-  if [ ! -d /logs ]; then mkdir /logs; fi
-  touch /logs/$REPO-$BRANCH-refresh
-  if [ -z "$REFRESH" ]; then  export REFRESH="*/10 * * * *" ; fi
-  touch /logs/git-refresh
+      #finally, schedule a cronjob to refresh the branch (default every 10m)
+      if [ ! -d /logs ]; then mkdir /logs; fi
+      touch /logs/$REPO-$BRANCH-refresh
+      if [ -z "$REFRESH" ]; then  export REFRESH="*/10 * * * *" ; fi
+      touch /logs/git-refresh
 
-  #replace git-setup with git-refresh
-  touch new_cron && cat /var/spool/cron/crontabs/root | grep -v git-setup >> new_cron && mv new_cron /var/spool/cron/crontabs/root
-  echo "$REFRESH /bin/bash -c 'cd / && ./git-refresh' >> /logs/git-refresh" >> /var/spool/cron/crontabs/root
+      #replace git-setup with git-refresh
+      touch new_cron && cat /var/spool/cron/crontabs/root | grep -v git-setup >> new_cron && mv new_cron /var/spool/cron/crontabs/root
+      echo "$REFRESH /bin/bash -c 'cd / && ./git-refresh' >> /logs/git-refresh" >> /var/spool/cron/crontabs/root
 
-  echo "\t...finished\tRefresh schedule '$REFRESH'" >> /logs/git-setup
+      echo "\t...finished\tRefresh schedule '$REFRESH'" >> /logs/git-setup
+    fi
 fi
