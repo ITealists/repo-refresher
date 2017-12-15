@@ -57,8 +57,8 @@ else #construct
     touch ~/.git-credentials
     if [ ! -z "$GIT_KEY" ]; then
         echo -e "\t...storing git credentials for $GIT_USER" >> /logs/git-setup
-        echo https://$GIT_USER:$GIT_KEY@github.com >> ~/.git-credentials
-        git config credential.helper store
+        rm ~/.git-credentials && echo https://$GIT_USER:$GIT_KEY@github.com > ~/.git-credentials
+        git config --global credential.helper 'store --file ~/.git-credentials'
     else
         echo -e "\t...setup cannot store credentials with only USER NAME" >> /logs/git-setup
     fi
